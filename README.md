@@ -13,6 +13,8 @@ The system is designed to support:
 
 ---
 
+![Logo](MQTT-kafka-bridge\Dashboards\real time operational Pipeline.png)
+
 ## Architecture Overview
 
 ### Systems Involved
