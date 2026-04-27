@@ -13,7 +13,7 @@ The system is designed to support:
 
 ---
 
-![Dashboard](.\Dashboards\real time operational Pipeline.png)
+![Dashboard](Dashboards/real-time-operational-pipeline.png)
 
 ## Architecture Overview
 
