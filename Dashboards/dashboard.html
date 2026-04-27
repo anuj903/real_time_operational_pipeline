@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Tank Monitoring - Enhanced</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .title::before {
+            content: "📊";
+            font-size: 32px;
+        }
+
+        .status-indicators {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .status-badge {
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
+        }
+
+        .status-badge:hover {
+            transform: translateY(-2px);
+        }
+
+        .status-badge.normal {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .status-badge.live {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .status-badge.time {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e9ecef;
+        }
+
+        .status-label {
+            font-size: 11px;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .status-value {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .alert-section {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(255,107,107,0.3);
+        }
+
+        .alert-icon {
+            font-size: 24px;
+        }
+
+        .alert-text {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .alert-detail {
+            font-size: 13px;
+            opacity: 0.95;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 35px;
+        }
+
+        .metric-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #f0f0f0;
+            transition: all 0.3s;
+        }
+
+        .metric-card:hover {
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            transform: translateY(-3px);
+        }
+
+        .metric-header {
+            font-size: 15px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .gauge-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+        }
+
+        .gauge-svg {
+            transform: rotate(-90deg);
+        }
+
+        .gauge-bg {
+            fill: none;
+            stroke: #f0f0f0;
+            stroke-width: 20;
+        }
+
+        .gauge-fill {
+            fill: none;
+            stroke-width: 20;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease;
+        }
+
+        .gauge-fill.critical {
+            stroke: url(#redGradient);
+        }
+
+        .gauge-fill.warning {
+            stroke: url(#yellowGradient);
+        }
+
+        .gauge-fill.normal {
+            stroke: url(#greenGradient);
+        }
+
+        .gauge-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .gauge-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #1a1a1a;
+            display: block;
+        }
+
+        .gauge-unit {
+            font-size: 16px;
+            color: #888;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .metric-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .trend-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .trend-indicator.falling {
+            color: #ff6b6b;
+        }
+
+        .trend-indicator.rising {
+            color: #51cf66;
+        }
+
+        .trend-indicator.stable {
+            color: #ffd43b;
+        }
+
+        .trend-arrow {
+            font-size: 18px;
+        }
+
+        .change-rate {
+            font-size: 13px;
+            color: #666;
+            background: #f8f9fa;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        .charts-section {
+            margin-top: 35px;
+        }
+
+        .section-header {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .time-range-selector {
+            display: flex;
+            gap: 8px;
+            background: #f8f9fa;
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .time-btn {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .time-btn:hover {
+            background: #e9ecef;
+        }
+
+        .time-btn.active {
+            background: white;
+            color: #1a1a1a;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #f0f0f0;
+        }
+
+        .chart-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        .chart-wrapper {
+            height: 250px;
+            position: relative;
+        }
+
+        .threshold-legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 12px;
+            font-size: 12px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        @media (max-width: 768px) {
+            .metrics-grid,
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">Smart Tank Monitoring – Real-Time Operational View</div>
+            <div class="status-indicators">
+                <div class="status-badge normal">
+                    <span class="status-label">Tank Status</span>
+                    <span class="status-value">NORMAL</span>
+                </div>
+                <div class="status-badge live">
+                    <span class="status-label">Data Freshness</span>
+                    <span class="status-value">LIVE</span>
+                </div>
+                <div class="status-badge time">
+                    <span class="status-label">Last Sensor Time</span>
+                    <span class="status-value">04-02-2026 09:26:42</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert-section">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-text">
+                <div class="alert-title">Rapid Tank Depletion Detected</div>
+                <div class="alert-detail">Tank level dropped from 75% to 61.9% at 09:23 - monitoring for potential leak</div>
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <!-- Tank Fill Metric -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span>Tank Fill (%)</span>
+                    <span style="font-size: 12px; color: #999;">📍 Target: >70%</span>
+                </div>
+                <div class="gauge-container">
+                    <svg class="gauge-svg" width="200" height="200">
+                        <defs>
+                            <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#11998e;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#38ef7d;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="yellowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#f093fb;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#f5576c;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#fa709a;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#fee140;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle class="gauge-bg" cx="100" cy="100" r="80"></circle>
+                        <circle class="gauge-fill warning" cx="100" cy="100" r="80" 
+                                stroke-dasharray="502.65" 
+                                stroke-dashoffset="190.5" 
+                                id="tankGauge"></circle>
+                    </svg>
+                    <div class="gauge-text">
+                        <span class="gauge-value">61.9</span>
+                        <span class="gauge-unit">%</span>
+                    </div>
+                </div>
+                <div class="metric-footer">
+                    <div class="trend-indicator falling">
+                        <span class="trend-arrow">↓</span>
+                        <span>Falling</span>
+                    </div>
+                    <div class="change-rate">-2.1%/hour</div>
+                </div>
+            </div>
+
+            <!-- Temperature Metric -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span>Temperature (°C)</span>
+                    <span style="font-size: 12px; color: #999;">📍 Optimal: 20-25°C</span>
+                </div>
+                <div class="gauge-container">
+                    <svg class="gauge-svg" width="200" height="200">
+                        <circle class="gauge-bg" cx="100" cy="100" r="80"></circle>
+                        <circle class="gauge-fill normal" cx="100" cy="100" r="80" 
+                                stroke-dasharray="502.65" 
+                                stroke-dashoffset="301.5" 
+                                id="tempGauge"></circle>
+                    </svg>
+                    <div class="gauge-text">
+                        <span class="gauge-value">24.1</span>
+                        <span class="gauge-unit">°C</span>
+                    </div>
+                </div>
+                <div class="metric-footer">
+                    <div class="trend-indicator falling">
+                        <span class="trend-arrow">↓</span>
+                        <span>Falling</span>
+                    </div>
+                    <div class="change-rate">-0.4°C/hour</div>
+                </div>
+            </div>
+
+            <!-- Humidity Metric -->
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span>Humidity (%)</span>
+                    <span style="font-size: 12px; color: #999;">📍 Range: 40-60%</span>
+                </div>
+                <div class="gauge-container">
+                    <svg class="gauge-svg" width="200" height="200">
+                        <circle class="gauge-bg" cx="100" cy="100" r="80"></circle>
+                        <circle class="gauge-fill normal" cx="100" cy="100" r="80" 
+                                stroke-dasharray="502.65" 
+                                stroke-dashoffset="266" 
+                                id="humidityGauge"></circle>
+                    </svg>
+                    <div class="gauge-text">
+                        <span class="gauge-value">47.0</span>
+                        <span class="gauge-unit">%</span>
+                    </div>
+                </div>
+                <div class="metric-footer">
+                    <div class="trend-indicator stable">
+                        <span class="trend-arrow">→</span>
+                        <span>Stable</span>
+                    </div>
+                    <div class="change-rate">±0.1%/hour</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-section">
+            <div class="section-header">
+                <span>Trend Analysis</span>
+                <div class="time-range-selector">
+                    <button class="time-btn">15min</button>
+                    <button class="time-btn active">30min</button>
+                    <button class="time-btn">1hr</button>
+                    <button class="time-btn">4hr</button>
+                    <button class="time-btn">24hr</button>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <!-- Tank Fill Chart -->
+                <div class="chart-card">
+                    <div class="chart-title">Tank Fill - Last 30 mins</div>
+                    <div class="chart-wrapper">
+                        <canvas id="tankChart"></canvas>
+                    </div>
+                    <div class="threshold-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ff6b6b;"></div>
+                            <span>Critical (<20%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ffd43b;"></div>
+                            <span>Warning (20-40%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #51cf66;"></div>
+                            <span>Normal (>40%)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Temperature Chart -->
+                <div class="chart-card">
+                    <div class="chart-title">Temperature - Last 30 mins</div>
+                    <div class="chart-wrapper">
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Humidity Chart -->
+                <div class="chart-card">
+                    <div class="chart-title">Humidity - Last 30 mins</div>
+                    <div class="chart-wrapper">
+                        <canvas id="humidityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chart.js configuration
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: 12,
+                    titleFont: { size: 13 },
+                    bodyFont: { size: 12 }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: true,
+                        color: 'rgba(0,0,0,0.05)'
+                    }
+                },
+                y: {
+                    grid: {
+                        display: true,
+                        color: 'rgba(0,0,0,0.05)'
+                    }
+                }
+            }
+        };
+
+        // Tank Fill Chart
+        const tankCtx = document.getElementById('tankChart').getContext('2d');
+        new Chart(tankCtx, {
+            type: 'line',
+            data: {
+                labels: ['09:20', '09:21', '09:22', '09:23', '09:24', '09:25', '09:26', '09:27'],
+                datasets: [{
+                    label: 'Tank Fill %',
+                    data: [75, 75.2, 74.8, 62, 61.8, 61.9, 62.1, 61.9],
+                    borderColor: '#4facfe',
+                    backgroundColor: 'rgba(79, 172, 254, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.1,
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                ...chartOptions,
+                scales: {
+                    ...chartOptions.scales,
+                    y: {
+                        ...chartOptions.scales.y,
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    ...chartOptions.plugins,
+                    annotation: {
+                        annotations: {
+                            line1: {
+                                type: 'line',
+                                yMin: 40,
+                                yMax: 40,
+                                borderColor: '#ffd43b',
+                                borderWidth: 2,
+                                borderDash: [5, 5]
+                            },
+                            line2: {
+                                type: 'line',
+                                yMin: 20,
+                                yMax: 20,
+                                borderColor: '#ff6b6b',
+                                borderWidth: 2,
+                                borderDash: [5, 5]
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Temperature Chart
+        const tempCtx = document.getElementById('tempChart').getContext('2d');
+        new Chart(tempCtx, {
+            type: 'line',
+            data: {
+                labels: ['09:20', '09:21', '09:22', '09:23', '09:24', '09:25', '09:26', '09:27'],
+                datasets: [{
+                    label: 'Temperature °C',
+                    data: [24.5, 24.5, 24.48, 24.2, 24.18, 24.15, 24.12, 24.1],
+                    borderColor: '#ff6b6b',
+                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.1,
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                ...chartOptions,
+                scales: {
+                    ...chartOptions.scales,
+                    y: {
+                        ...chartOptions.scales.y,
+                        min: 24,
+                        max: 25,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '°C';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Humidity Chart
+        const humidityCtx = document.getElementById('humidityChart').getContext('2d');
+        new Chart(humidityCtx, {
+            type: 'line',
+            data: {
+                labels: ['09:20', '09:21', '09:22', '09:23', '09:24', '09:25', '09:26', '09:27'],
+                datasets: [{
+                    label: 'Humidity %',
+                    data: [47, 47.1, 46.9, 47.2, 47, 47.1, 46.95, 47],
+                    borderColor: '#51cf66',
+                    backgroundColor: 'rgba(81, 207, 102, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.1,
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                ...chartOptions,
+                scales: {
+                    ...chartOptions.scales,
+                    y: {
+                        ...chartOptions.scales.y,
+                        min: 40,
+                        max: 60,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Time range selector functionality
+        document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

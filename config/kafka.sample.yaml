@@ -1,0 +1,5 @@
+kafka:
+  bootstrap_servers: "YOUR_KAFKA_IP:9092"
+  topic: "esp32.distance"
+  acks: 1
+  retries: 10
